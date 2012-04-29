@@ -1,0 +1,40 @@
+{
+    "@context": {
+        "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+        "rdfs": "http://www.w3.org/TR/1999/PR-rdf-schema-19990303#",
+        "fipa-rdf": "http://www.fipa.org/schemas/FIPA-RDF#",
+        "PEOPLE_ONTOLOGY": "http://www.example.com/people#"
+    },
+    "fipa-rdf:CONTENT_ELEMENT": {
+        "@type": "http://www.example.com/people#FATHER_OF",
+        "PEOPLE_ONTOLOGY:FATHER": {
+            "@type": "http://www.example.com/people#MAN",
+            "PEOPLE_ONTOLOGY:NAME": "John",
+            "PEOPLE_ONTOLOGY:ADDRESS": {
+                "PEOPLE_ONTOLOGY:STREET": "John Kennedy Street",
+                "PEOPLE_ONTOLOGY:NUMBER": 3,
+                "PEOPLE_ONTOLOGY:CITY": "London"
+            }
+        },
+        "PEOPLE_ONTOLOGY:CHILDREN": [
+            {
+                "@type": "http://www.example.com/people#MAN",
+                "PEOPLE_ONTOLOGY:NAME": "Bill",
+                "PEOPLE_ONTOLOGY:ADDRESS": {
+                    "PEOPLE_ONTOLOGY:STREET": "Lionel",
+                    "PEOPLE_ONTOLOGY:NUMBER": 24,
+                    "PEOPLE_ONTOLOGY:CITY": "Paris"
+                }
+            },
+            {
+                "@type": "http://www.example.com/people#MAN",
+                "PEOPLE_ONTOLOGY:NAME": "Tony",
+                "PEOPLE_ONTOLOGY:ADDRESS": {
+                    "PEOPLE_ONTOLOGY:STREET": "Via Bologna",
+                    "PEOPLE_ONTOLOGY:NUMBER": 11,
+                    "PEOPLE_ONTOLOGY:CITY": "Naples"
+                }
+            }
+        ]
+    }
+}
