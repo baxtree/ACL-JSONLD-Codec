@@ -1,12 +1,11 @@
+/.settings*
+.classpath
+.project
+*APDescription*.txt
+*MTPs-Main-Container*.txt
 *.class
-
-# Package Files #
 *.jar
 *.war
 *.ear
+.gitignore
 
-.settings*
-.classpath
-.project
-APDescription*
-MTPs-Main-Container*
