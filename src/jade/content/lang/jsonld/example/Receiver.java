@@ -70,6 +70,8 @@ public class Receiver extends Agent {
 		public void action() {
 	    ACLMessage msg = receive();
 	    if (msg != null) {
+//	    		System.out.println("msg ontology: " + msg.getOntology());
+//	    		System.out.println("msg body: " + msg.getContent());
 				try {
 			    ContentElement ce = myAgent.getContentManager().extractContent(msg);
 			    if(ce instanceof FatherOf) {

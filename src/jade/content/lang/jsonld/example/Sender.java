@@ -62,7 +62,8 @@ public class Sender extends Agent {
 			logger.log(Logger.FINE, "[" + getLocalName() + "] Creating inform message with content fatherOf(man :name John :address London, (man :name Bill :address Paris)");
 
 		ACLMessage msg = new ACLMessage(ACLMessage.INFORM);
-		AID receiver = new AID("receiver", false);
+		AID receiver = new AID("receiver@10.3.111.84:1101/JADE", true);
+		receiver.addAddresses("http://10.3.111.84:7778/acc");
 
 		msg.setSender(getAID());
 		msg.addReceiver(receiver);

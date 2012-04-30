@@ -11,6 +11,7 @@ import jade.content.abs.AbsPrimitive;
 import jade.content.abs.AbsTerm;
 import jade.content.lang.Codec;
 import jade.content.lang.StringCodec;
+import jade.content.lang.Codec.CodecException;
 import jade.content.lang.rdf.RDFCodec;
 import jade.content.onto.BasicOntology;
 import jade.content.onto.Ontology;
@@ -26,17 +27,30 @@ import jade.util.leap.ArrayList;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.Date;
 import java.util.Properties;
+
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 
 import org.apache.commons.codec.binary.Base64;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.xml.sax.Attributes;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
+import org.xml.sax.helpers.DefaultHandler;
 
 public class JSONLDCodec extends StringCodec {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	public static final String NAME = "JSONLDCodec";
 	
 	Ontology ontology;
@@ -71,6 +85,21 @@ public class JSONLDCodec extends StringCodec {
 	
 	String lastValue;
 	
+	XMLContentHandler handler;
+	
+	SAXParser parser;
+	
+	boolean XMLValidation;
+	
+	static final String JAXP_SCHEMA_LANGUAGE =
+	    "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
+
+	static final String W3C_XML_SCHEMA =
+	    "http://www.w3.org/2001/XMLSchema";
+	    
+	static final String JAXP_SCHEMA_SOURCE = 
+		"http://java.sun.com/xml/jaxp/properties/schemaSource";
+	
 	static final String NAMESPACE   = 	"\"@context\" : {" +
 		"  \"rdf\" : \"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"," +
 		"  \"rdfs\" : \"http://www.w3.org/TR/1999/PR-rdf-schema-19990303#\"," +
@@ -78,8 +107,103 @@ public class JSONLDCodec extends StringCodec {
 	
 	public JSONLDCodec() {
 		super(NAME);
+		initComponents(false);
+	}
+	
+	public JSONLDCodec(boolean pXMLValidation) {
+		super(NAME);
+		initComponents(pXMLValidation);	
+	}	
+	
+	class XMLErrorHandler implements ErrorHandler {
+		
+		public void error(SAXParseException exception) {
+			exception.printStackTrace();
+		}
+			
+		public void fatalError(SAXParseException exception) {
+			exception.printStackTrace();
+		}
+			
+		public void warning(SAXParseException exception) {
+			exception.printStackTrace();
+		}
 	}
 
+	class XMLContentHandler extends DefaultHandler {
+		
+		String lastValue;
+		boolean finished=false;	
+		boolean foundType=false;		
+		String prevTag=null;
+		String validTag=null;
+			public void startElement(String namespaceURI,
+								 String localName,
+								 String qname,
+								 Attributes attr) throws SAXException {
+			
+		
+			try {
+				lastValue = new String();
+				openTag(qname,localName, attr);		
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new SAXException(e.getMessage());
+			}
+		}
+		
+			
+		public void endElement(String namespaceURI,
+							   String localName,
+							   String qname) throws SAXException { 
+							   
+			
+										  
+			try {
+	   			closeTag(qname,localName, lastValue);
+	   		} catch (OntologyException e) {
+	   			throw new SAXException(e.getMessage());
+	   		}
+		}
+		
+		
+			public void characters(char[] ch, 
+							   int start,
+							   int length) throws SAXException {
+
+			String temp = new String(ch, start, length);
+			temp.trim();
+			if ((temp.charAt(0)=='\t') && (temp.charAt(temp.length()-1)=='\t'))
+				temp = "";
+			lastValue = lastValue + temp;
+			// Remove unexpected text data like sequence of tabs
+			
+		}					   	
+
+		
+		   		
+	}
+	
+	protected void initComponents(boolean pXMLValidation) {
+	
+		XMLValidation = pXMLValidation;
+		handler = new XMLContentHandler();
+		
+		try {
+			SAXParserFactory factory = SAXParserFactory.newInstance();
+			factory.setValidating(XMLValidation);
+			factory.setNamespaceAware(!XMLValidation);
+			parser = factory.newSAXParser();
+			if (XMLValidation) {
+				parser.getXMLReader().setErrorHandler(new XMLErrorHandler());	
+				parser.setProperty(JAXP_SCHEMA_LANGUAGE, W3C_XML_SCHEMA);
+			}
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(0);
+		}
+	}	
 	
 	public String normaliseJSON(StringBuffer sb){
 		return sb.toString().replaceAll(",}", "}").replaceAll(",]", "]");
@@ -168,7 +292,7 @@ public class JSONLDCodec extends StringCodec {
 
 	public void encodeWithJSON(AbsObject content, ObjectSchema parentSchema,String slotExpectedType, String tag, StringBuffer sb, boolean sq, boolean last, boolean first ) throws Codec.CodecException {
 		String startTag;
-    	String closeTag;
+//    	String closeTag;
 		try {
 
 			// Encoding a ContentElementList
@@ -245,10 +369,10 @@ public class JSONLDCodec extends StringCodec {
 
 			if (tag == null) {
 				startTag = "fipa-rdf:CONTENT_ELEMENT";
-				closeTag = "fipa-rdf:CONTENT_ELEMENT";
+//				closeTag = "fipa-rdf:CONTENT_ELEMENT";
 			} else {
 				startTag = new String(tag);
-				closeTag = startTag;
+//				closeTag = startTag;
 			}
 
 			if (slotExpectedType != null) {
@@ -365,10 +489,6 @@ public class JSONLDCodec extends StringCodec {
 		}
 	}
 	
-	public AbsContentElement getDecodedContent(String content){
-		return null;
-	}
-
 	public void setOntology(Ontology o) {
 		ontology = o;
 		ontologyName = o.getName();
@@ -380,22 +500,39 @@ public class JSONLDCodec extends StringCodec {
 		try{
 			JSONObject jsonObj = new JSONObject(content);
 			rdfxml = jsonObj.getString("rdfxml").toString();
+			try {
+				parser.parse(new InputSource(new StringReader(rdfxml)), handler);
+	 		} catch (Exception e) {
+	 			e.printStackTrace();
+	 			throw new CodecException(e.getMessage());
+	 			
+	 		}
 		}
 		catch(JSONException jsone){
 			jsone.printStackTrace();
 		}
 //		content = getXMLFromJSONLD(content);
-		AbsContentElement temp = getDecodedContent(rdfxml);
+		AbsContentElement temp = getDecodedContent();
+//		System.out.println("Decoded ace: " + temp);
 		return temp;
 	}
 
 	@Override
 	public AbsContentElement decode(Ontology ontology, String content) throws CodecException {
-		setOntology(ontology);
+		try {
+			setOntology(ontology);
+			if (XMLValidation) {
+				System.out.println(ontology.getName().concat(".xsd"));			
+				parser.setProperty(JAXP_SCHEMA_SOURCE, ontology.getName().concat(".xsd"));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new CodecException(e.getMessage());
+		}
 		return decode(content);
 	}
 	
-	//TODO: JSONLD => JSON => XML
+//	TODO: JSONLD => JSON => XML
 //	public String getXMLFromJSONLD(String content){
 //		
 //		return null;
